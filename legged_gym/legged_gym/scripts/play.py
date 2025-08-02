@@ -189,22 +189,22 @@ if __name__ == '__main__':
     args = get_args()
     args.debug_show = True
 
-    NAME="S"
+    NAME="T"
 
     ## teacher
     if NAME == "T":
-        args.task = "a1"  # Set the task to A1
-        args.proj_name = "train"
-        args.exptid  = "Teacher-test1"
+        args.task = "go2"  # Set the task to A1
+        args.proj_name = "train_go2"
+        args.exptid  = "Teacher_go2"
         args.num_envs = 50
 
 
     ## student
     if NAME == "S":
-        args.task = "a1"  # Set the task to A1
-        args.proj_name = "train"
-        args.exptid  = "Student-test1"
-        args.num_envs = 10
+        args.task = "go2"  # Set the task to A1
+        args.proj_name = "train_go2"
+        args.exptid  = "Teacher_go2"
+        args.num_envs = 128
         args.delay = True
         args.use_camera = True
     play(args)

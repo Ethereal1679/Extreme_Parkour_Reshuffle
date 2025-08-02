@@ -291,12 +291,21 @@ class LeggedRobot(BaseTask):
                 cv2.imshow("Depth Image", self.depth_buffer[self.lookat_id, -1].cpu().numpy() + 0.5)
                 cv2.waitKey(1)
 
+    #### a1
+    # def reindex_feet(self, vec):
+    #     return vec[:, [1, 0, 3, 2]]
 
+    # def reindex(self, vec):
+    #     return vec[:, [3, 4, 5, 0, 1, 2, 9, 10, 11, 6, 7, 8]]
+
+    #### go2
     def reindex_feet(self, vec):
-        return vec[:, [1, 0, 3, 2]]
+        return vec[:, [0, 1, 2, 3]]
+
 
     def reindex(self, vec):
-        return vec[:, [3, 4, 5, 0, 1, 2, 9, 10, 11, 6, 7, 8]]
+        return vec[:, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]
+
 
     def check_termination(self):
         """ Check if environments need to be reset
@@ -414,7 +423,7 @@ class LeggedRobot(BaseTask):
                             self.reindex(self.action_history_buf[:, -1]),
                             self.reindex_feet(self.contact_filt.float()-0.5),
                             ),dim=-1)
-        
+
         ### state estimator 待预测的量
         priv_explicit = torch.cat((self.base_lin_vel * self.obs_scales.lin_vel, #3
                                    0 * self.base_lin_vel, #3

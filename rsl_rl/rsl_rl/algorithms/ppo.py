@@ -201,7 +201,7 @@ class PPO:
                 value_batch = self.actor_critic.evaluate(critic_obs_batch, masks=masks_batch, hidden_states=hid_states_batch[1])
                 mu_batch = self.actor_critic.action_mean
                 sigma_batch = self.actor_critic.action_std
-                entropy_batch = self.actor_critic.entropy
+                entropy_batch = self.actor_critic.entropy ##信息熵，是一个负数
                 
                 ##### priv-latent 特权信息编码器,应该只是用在teacher上面
                 # Adaptation module update
@@ -228,9 +228,9 @@ class PPO:
                             torch.log(sigma_batch / old_sigma_batch + 1.e-5) + (torch.square(old_sigma_batch) + torch.square(old_mu_batch - mu_batch)) / (2.0 * torch.square(sigma_batch)) - 0.5, axis=-1)
                         kl_mean = torch.mean(kl)
 
-                        if kl_mean > self.desired_kl * 2.0:
+                        if kl_mean > self.desired_kl * 2.0: # >0.02
                             self.learning_rate = max(1e-5, self.learning_rate / 1.5)
-                        elif kl_mean < self.desired_kl / 2.0 and kl_mean > 0.0:
+                        elif kl_mean < self.desired_kl / 2.0 and kl_mean > 0.0: # 0~0.005
                             self.learning_rate = min(1e-2, self.learning_rate * 1.5)
                         
                         for param_group in self.optimizer.param_groups:

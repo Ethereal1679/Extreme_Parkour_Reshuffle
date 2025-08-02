@@ -70,30 +70,32 @@ if __name__ == '__main__':
     # Log configs immediately
     args = get_args()
 
-    NAME="S"
 
+    NAME="T"
+    task_name = "go2"
     ## teacher
     if NAME == "T":
-        args.task = "a1"  # Set the task to A1
+        args.task = f"{task_name}"  # Set the task to A1
         args.max_iterations = 10000000
-        args.num_envs = 4096
-        args.proj_name = "train"
-        args.exptid = "Teacher-test1"
+        args.num_envs = 1024
+        args.proj_name = f"train_{task_name}"
+        args.exptid = f"Teacher_{task_name}"
         args.headless = True
 
     ## student
     if NAME == "S":
-        args.task = "a1"  # Set the task to A1
+        args.task = f"{task_name}"  # Set the task to A1
         args.max_iterations = 10000000
         args.num_envs = 64
-        args.proj_name = "train"
-        args.exptid = "Student-test1"
+        args.proj_name = f"train_{task_name}"
+        args.exptid = f"Student_{task_name}"
         args.headless = True
         ## 
         args.resume = True
-        args.resumeid = "Teacher-test1"
+        args.resumeid = "Teacher_go2"
         args.delay = True
         args.use_camera = True
+
 
     train(args)
 

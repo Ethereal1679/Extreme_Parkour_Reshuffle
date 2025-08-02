@@ -41,6 +41,8 @@ from rsl_rl.runners import OnPolicyRunner
 from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
 from .helpers import get_args, update_cfg_from_args, class_to_dict, get_load_path, set_seed, parse_sim_params
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
+import ntpath
+from shutil import copyfile
 
 class TaskRegistry():
     def __init__(self):
@@ -62,7 +64,39 @@ class TaskRegistry():
         # copy seed
         env_cfg.seed = train_cfg.seed
         return env_cfg, train_cfg
-    
+
+    ## added to auto save configs
+    def save_cfgs(self, name) -> Tuple[LeggedRobotCfg, LeggedRobotCfgPPO]:
+        os.mkdir(self.log_dir)
+        save_items = [
+            os.path.join(
+                self.log_dir,
+                LEGGED_GYM_ENVS_DIR + f"/{name}/legged_robot.py",
+            ),
+            os.path.join(
+                self.log_dir,
+                LEGGED_GYM_ENVS_DIR + f"/{name}/legged_robot_config.py",
+            ),
+            os.path.join(
+                self.log_dir,
+                LEGGED_GYM_ENVS_DIR + f"/{name}/{name}_config.py",
+            ),
+            os.path.join(
+                self.log_dir,
+                LEGGED_GYM_ENVS_DIR + f"/{name}/{name}_env.py",
+            ),
+        ]
+        py_root = os.path.join(
+            LEGGED_GYM_ENVS_DIR + "/{}/".format(name) + "{}.py".format(name),
+        )
+        if os.path.exists(py_root):
+            save_items.append(os.path.join(self.log_dir, py_root))
+        if save_items is not None:
+            for save_item in save_items:
+                base_file_name = ntpath.basename(save_item)
+                copyfile(save_item, self.log_dir + "/" + base_file_name)
+
+
     def make_env(self, name, args=None, env_cfg=None) -> Tuple[VecEnv, LeggedRobotCfg]:
         """ Creates an environment either from a registered namme or from the provided config file.
 
