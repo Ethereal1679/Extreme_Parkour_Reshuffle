@@ -70,8 +70,8 @@ def play(args):
     env_cfg.env.episode_length_s = 60
     env_cfg.commands.resampling_time = 60
     ### 
-    env_cfg.terrain.num_rows = 5
-    env_cfg.terrain.num_cols = 5
+    env_cfg.terrain.num_rows = 3#5
+    env_cfg.terrain.num_cols = 3#5
     env_cfg.terrain.height = [0.02, 0.02]
     env_cfg.terrain.terrain_dict = {"smooth slope": 0., 
                                     "rough slope up": 0.0,
@@ -137,7 +137,9 @@ def play(args):
     infos = {}
     infos["depth"] = env.depth_buffer.clone().to(ppo_runner.device)[:, -1] if ppo_runner.if_depth else None
 
-    for i in range(10*int(env.max_episode_length)):
+    # for i in range(10*int(env.max_episode_length)):
+    state_lange_time = 2000
+    for i in range(state_lange_time):
         if args.use_jit:
             if env.cfg.depth.use_camera:
                 if infos["depth"] is not None:
@@ -183,13 +185,13 @@ def play(args):
 
 
 if __name__ == '__main__':
-    EXPORT_POLICY = False
+    EXPORT_POLICY = True
     RECORD_FRAMES = False
     MOVE_CAMERA = False
     args = get_args()
     args.debug_show = True
 
-    NAME="T"
+    NAME="S"
 
     ## teacher
     if NAME == "T":
@@ -203,10 +205,17 @@ if __name__ == '__main__':
     if NAME == "S":
         args.task = "go2"  # Set the task to A1
         args.proj_name = "train_go2"
-        args.exptid  = "Teacher_go2"
-        args.num_envs = 128
+        args.exptid  = "Student_go2"
+        args.num_envs = 30
         args.delay = True
         args.use_camera = True
+
+        # args.task = "go1"  # Set the task to A1
+        # args.proj_name = "train"
+        # args.exptid  = "Student-test1"
+        # args.num_envs = 15
+        # args.delay = True
+        # args.use_camera = True
     play(args)
 
 

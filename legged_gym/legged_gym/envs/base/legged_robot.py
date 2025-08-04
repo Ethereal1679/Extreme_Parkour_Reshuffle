@@ -167,6 +167,12 @@ class LeggedRobot(BaseTask):
     def process_depth_image(self, depth_image, env_id):
         # These operations are replicated on the hardware
         depth_image = self.crop_depth_image(depth_image)
+
+        ### 添加高斯噪声
+        if hasattr(self.cfg.depth, "guassian_noise_std"):
+            gaussian_noise = torch.randn_like(depth_image) * self.cfg.depth.guassian_noise_std
+            depth_image += gaussian_noise
+        
         # 加噪
         depth_image += self.cfg.depth.dis_noise * 2 * (torch.rand(1)-0.5)[0]
         depth_image = torch.clip(depth_image, -self.cfg.depth.far_clip, -self.cfg.depth.near_clip)
@@ -411,17 +417,22 @@ class LeggedRobot(BaseTask):
         obs_buf = torch.cat((#skill_vector, 
                             self.base_ang_vel  * self.obs_scales.ang_vel,   #[1,3]
                             imu_obs,    #[1,2]
-                            0*self.delta_yaw[:, None], 
+
+                            0*self.delta_yaw[:, None],  
                             self.delta_yaw[:, None],
-                            self.delta_next_yaw[:, None],
+                            self.delta_next_yaw[:, None],  #[0,  delta_yaw,  delta_next_yaw]
+
                             0*self.commands[:, 0:2], 
-                            self.commands[:, 0:1],  #[1,1]
-                            (self.env_class != 17).float()[:, None], 
-                            (self.env_class == 17).float()[:, None],
-                            self.reindex((self.dof_pos - self.default_dof_pos_all) * self.obs_scales.dof_pos),
-                            self.reindex(self.dof_vel * self.obs_scales.dof_vel),
-                            self.reindex(self.action_history_buf[:, -1]),
-                            self.reindex_feet(self.contact_filt.float()-0.5),
+                            self.commands[:, 0:1],  #[1,1] [0,  0,  vx]
+
+                            (self.env_class != 17).float()[:, None], #1  #parkour=[1,0] walk=[0,1]
+                            (self.env_class == 17).float()[:, None], #1
+
+                            self.reindex((self.dof_pos - self.default_dof_pos_all) * self.obs_scales.dof_pos),#12
+                            self.reindex(self.dof_vel * self.obs_scales.dof_vel),#12
+                            self.reindex(self.action_history_buf[:, -1]),#12
+                            
+                            self.reindex_feet(self.contact_filt.float()-0.5),#4
                             ),dim=-1)
 
         ### state estimator 待预测的量
@@ -897,8 +908,19 @@ class LeggedRobot(BaseTask):
             camera_props.width = self.cfg.depth.original[0]
             camera_props.height = self.cfg.depth.original[1]
             camera_props.enable_tensors = True
+
+            if hasattr(config, "near_plane"):
+                camera_props.near_plane = config.near_plane
+                # print('Near plane has been set.')
+            
+            ## zsy modify
             camera_horizontal_fov = self.cfg.depth.horizontal_fov 
-            camera_props.horizontal_fov = camera_horizontal_fov
+            if isinstance(camera_horizontal_fov, (tuple, list)):
+                camera_props.horizontal_fov = np.random.uniform(
+                    camera_horizontal_fov[0], camera_horizontal_fov[1])
+                # print('Camera horizontal fov has been randomized.')
+            else:
+                camera_props.horizontal_fov = camera_horizontal_fov
 
             camera_handle = self.gym.create_camera_sensor(env_handle, camera_props)
             self.cam_handles.append(camera_handle)

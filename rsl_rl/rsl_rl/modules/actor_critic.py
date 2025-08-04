@@ -37,7 +37,7 @@ from torch.distributions import Normal
 from torch.nn.modules import rnn
 from torch.nn.modules.activation import ReLU
 
-
+# TCN
 class StateHistoryEncoder(nn.Module):
     def __init__(self, activation_fn, input_size, tsteps, output_size, tanh_encoder_output=False):
         # self.device = device
@@ -51,7 +51,7 @@ class StateHistoryEncoder(nn.Module):
         self.encoder = nn.Sequential(
                 nn.Linear(input_size, 3 * channel_size), self.activation_fn,
                 )
-        ### 一位卷积
+        ### 一维卷积
         if tsteps == 50:
             self.conv_layers = nn.Sequential(
                     nn.Conv1d(in_channels = 3 * channel_size, out_channels = 2 * channel_size, kernel_size = 8, stride = 4), self.activation_fn,

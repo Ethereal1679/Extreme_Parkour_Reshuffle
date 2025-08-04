@@ -71,24 +71,25 @@ if __name__ == '__main__':
     args = get_args()
 
 
-    NAME="T"
+    NAME="S"  ## remember to change this to "T" for teacher training or "S" for student training
     task_name = "go2"
+
     ## teacher
     if NAME == "T":
         args.task = f"{task_name}"  # Set the task to A1
         args.max_iterations = 10000000
         args.num_envs = 1024
-        args.proj_name = f"train_{task_name}"
-        args.exptid = f"Teacher_{task_name}"
+        args.proj_name = f"train_go2"
+        args.exptid = f"Teacher_go2"
         args.headless = True
 
     ## student
     if NAME == "S":
         args.task = f"{task_name}"  # Set the task to A1
         args.max_iterations = 10000000
-        args.num_envs = 64
-        args.proj_name = f"train_{task_name}"
-        args.exptid = f"Student_{task_name}"
+        args.num_envs = 80
+        args.proj_name = f"train_go2"
+        args.exptid = f"Student_go2"
         args.headless = True
         ## 
         args.resume = True

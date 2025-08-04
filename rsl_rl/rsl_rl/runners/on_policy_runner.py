@@ -92,7 +92,7 @@ class OnPolicyRunner:
         # self.depth_encoder_optimizer = optim.Adam(self.depth_encoder.parameters(), lr=self.depth_encoder_cfg["learning_rate"])
         # self.depth_encoder_paras = self.depth_encoder_cfg
         # self.depth_encoder_criterion = nn.MSELoss()
-        # Create algorithm
+        # Create algorithm  
         alg_class = eval(self.cfg["algorithm_class_name"]) # PPO
         self.alg: PPO = alg_class(actor_critic, 
                                   estimator, self.estimator_cfg, 
@@ -264,7 +264,7 @@ class OnPolicyRunner:
                     depth_latent_buffer.append(depth_latent)
                     yaw_buffer_student.append(yaw)
                     yaw_buffer_teacher.append(obs[:, 6:8])
-                
+                    
                 ### Teacher的actions表述
                 with torch.no_grad():
                     actions_teacher = self.alg.actor_critic.act_inference(obs, hist_encoding=True, scandots_latent=None)
