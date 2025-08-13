@@ -83,7 +83,7 @@ class OnPolicyRunner:
                                                     self.depth_encoder_cfg["hidden_dims"],
                                                     )
             ### 一组图像的编码器
-            depth_encoder = RecurrentDepthBackbone(depth_backbone, env.cfg).to(self.device)
+            depth_encoder = RecurrentDepthBackbone(depth_backbone, env.cfg, eval_prop_n=env.cfg.env.n_proprio).to(self.device)
             depth_actor = deepcopy(actor_critic.actor)
         else:
             depth_encoder = None
@@ -141,6 +141,7 @@ class OnPolicyRunner:
         critic_obs = privileged_obs if privileged_obs is not None else obs
         obs, critic_obs = obs.to(self.device), critic_obs.to(self.device)
         infos = {}
+        # import ipdb;ipdb.set_trace()
         infos["depth"] = self.env.depth_buffer.clone().to(self.device) if self.if_depth else None
         self.alg.actor_critic.train() # switch to train mode (for dropout for example)
 
@@ -235,6 +236,7 @@ class OnPolicyRunner:
         infos = {}
         infos["depth"] = self.env.depth_buffer.clone().to(self.device)[:, -1] if self.if_depth else None
         infos["delta_yaw_ok"] = torch.ones(self.env.num_envs, dtype=torch.bool, device=self.device)
+        # import ipdb;ipdb.set_trace()
         ### 切换网络的训练姿态
         self.alg.depth_encoder.train()
         self.alg.depth_actor.train()

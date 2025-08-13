@@ -137,6 +137,7 @@ class RolloutStorage:
         self.advantages = self.returns - self.values
         self.advantages = (self.advantages - self.advantages.mean()) / (self.advantages.std() + 1e-8)
 
+
     def get_statistics(self):
         done = self.dones
         done[-1] = 1

@@ -101,11 +101,11 @@ class Go2RoughCfg( LeggedRobotCfg ):
     class depth( LeggedRobotCfg.depth):
         position = [0.355, 0, 0.065]  ## 这个量我是怎么得到的？
         angle = [20, 25]
-        
+
         horizontal_fov = [86, 90]
 
-        dis_noise = 0.0
-        gaussian_noise_std = 0.0
+        dis_noise = 0.1
+        gaussian_noise_std = 0.1
         near_plane = 0.1
 
 

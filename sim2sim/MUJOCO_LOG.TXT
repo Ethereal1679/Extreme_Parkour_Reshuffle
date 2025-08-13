@@ -1,0 +1,12 @@
+Fri Aug  8 20:48:54 2025
+ERROR: mjv_updateCamera: fixed camera id is outside valid range
+
+Fri Aug  8 21:11:41 2025
+ERROR: mjv_updateCamera: fixed camera id is outside valid range
+
+Sun Aug 10 18:48:00 2025
+WARNING: Pre-allocated visual geom buffer is full. Increase maxgeom above 20000. Time = 0.0000.
+
+Sun Aug 10 18:48:00 2025
+WARNING: Pre-allocated visual geom buffer is full. Increase maxgeom above 10000. Time = 0.0050.
+

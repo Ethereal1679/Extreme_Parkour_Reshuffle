@@ -1,6 +1,12 @@
 # 
-policy_path: "{LEGGED_GYM_ROOT_DIR}/deploy/pre_train/g1/motion.pt"
-xml_path: "{LEGGED_GYM_ROOT_DIR}/resources/robots/g1_description/scene.xml"
+policy_path: "{SIM2SIM}/pretrain/traced/base_jit.pt"
+vision_policy_path: "{SIM2SIM}/pretrain/traced/vision_weight.pt"
+xml_path: "{SIM2SIM}/resources/go2_with_camera/depth_camera_scene_terrain.xml"
+
+## camera ====
+output_resolution : [58, 87]
+depth_range : [0.0, 3.0]
+cropping: [60, 100, 80, 40] # [top, bottom, left, right] # no cropping
 
 # Total simulation time
 simulation_duration: 60.0
@@ -15,6 +21,9 @@ kds: [1, 1, 1,    1, 1, 1,    1, 1, 1,    1, 1, 1]
 
 default_angles: [0.1,  0.8,  -1.5,   0.1, 1.0, -1.5, 
                 -0.1,  0.8,  -1.5,  -0.1, 1.0, -1.5]
+# default_angles: [0.,  0.,  -0.,   0., 0.0, -0., 
+#                 -0.,  0.,  -0.,  -0., 0.0, -0.]
+
 
 ang_vel_scale: 0.25
 dof_pos_scale: 1.0
@@ -25,7 +34,10 @@ action_scale: 0.25
 cmd_scale: [2.0, 2.0, 0.25]
 
 num_actions: 12
-num_obs: 53
+
+n_proprio: 49
+n_hist_len : 10
+n_depth_latent : 32
 
 cmd_init: [0.5, 0, 0] #初始命令
 

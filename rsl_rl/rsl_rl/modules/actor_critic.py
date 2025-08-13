@@ -292,7 +292,7 @@ class ActorCriticRMA(nn.Module):
     def act(self, observations, hist_encoding=False, **kwargs):
         self.update_distribution(observations, hist_encoding)
         return self.distribution.sample()
-    
+
     def get_actions_log_prob(self, actions):
         return self.distribution.log_prob(actions).sum(dim=-1)
 
@@ -330,3 +330,4 @@ def get_activation(act_name):
     else:
         print("invalid activation function!")
         return None
+

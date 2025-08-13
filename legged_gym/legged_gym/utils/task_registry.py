@@ -66,34 +66,31 @@ class TaskRegistry():
         return env_cfg, train_cfg
 
     ## added to auto save configs
-    def save_cfgs(self, name) -> Tuple[LeggedRobotCfg, LeggedRobotCfgPPO]:
-        os.mkdir(self.log_dir)
+    def save_cfgs(self, task, name) -> Tuple[LeggedRobotCfg, LeggedRobotCfgPPO]:
+        self.log_dir = f"{LEGGED_GYM_ROOT_DIR}/logs/train_go2/{name}/"
+        # os.mkdir(self.log_dir)
         save_items = [
             os.path.join(
                 self.log_dir,
-                LEGGED_GYM_ENVS_DIR + f"/{name}/legged_robot.py",
+                LEGGED_GYM_ENVS_DIR + f"/base/legged_robot.py",
             ),
             os.path.join(
                 self.log_dir,
-                LEGGED_GYM_ENVS_DIR + f"/{name}/legged_robot_config.py",
+                LEGGED_GYM_ENVS_DIR + f"/base/legged_robot_config.py",
             ),
             os.path.join(
                 self.log_dir,
-                LEGGED_GYM_ENVS_DIR + f"/{name}/{name}_config.py",
-            ),
-            os.path.join(
-                self.log_dir,
-                LEGGED_GYM_ENVS_DIR + f"/{name}/{name}_env.py",
+                LEGGED_GYM_ENVS_DIR + f"/{task}/{task}_config.py",
             ),
         ]
         py_root = os.path.join(
-            LEGGED_GYM_ENVS_DIR + "/{}/".format(name) + "{}.py".format(name),
+            LEGGED_GYM_ENVS_DIR + "/{}/".format(task) + "{}.py".format(task),
         )
         if os.path.exists(py_root):
             save_items.append(os.path.join(self.log_dir, py_root))
         if save_items is not None:
             for save_item in save_items:
-                base_file_name = ntpath.basename(save_item)
+                base_file_name = ntpath.basename(save_item) #提取出文件名部分
                 copyfile(save_item, self.log_dir + "/" + base_file_name)
 
 

@@ -5,7 +5,7 @@
 
   <default>
     <default class="go2">
-      <geom friction="0.6" margin="0.001" condim="1"/>
+      <geom friction="0.4" margin="0.001" condim="1"/>
       <joint axis="0 1 0" damping="0.1" armature="0.01" frictionloss="0.2"/>
       <motor ctrlrange="-23.7 23.7"/>
       <default class="abduction">
@@ -30,7 +30,7 @@
         <geom group="3"/>
         <default class="foot">
           <geom size="0.022" pos="-0.002 0 -0.213" priority="1" condim="6"
-            friction="0.6 0.02 0.01"/>
+            friction="0.4 0.02 0.01"/>
         </default>
       </default>
     </default>
@@ -61,7 +61,7 @@
   </asset>
 
   <worldbody>
-    <body name="base_link" pos="0 0 0.4" childclass="go2">
+    <body name="base_link" pos="0 0 0.445" childclass="go2">
       <inertial pos="0.021112 0 -0.005366" quat="-0.000543471 0.713435 -0.00173769 0.700719"
         mass="6.921"
         diaginertia="0.107027 0.0980771 0.0244531" />
@@ -74,7 +74,7 @@
       <geom size="0.1881 0.04675 0.057" type="box" class="collision" />
       <geom size="0.05 0.045" pos="0.285 0 0.01" type="cylinder" class="collision" />
       <geom size="0.047" pos="0.293 0 -0.06" class="collision" />
-      <site name="imu" pos="-0.02557 0 0.04232" />
+      <site name="imu" pos="-0.02557 0 0.04232" /> <!-- IMU site position -->
       <body name="FL_hip" pos="0.1934 0.0465 0">
         <inertial pos="-0.0054 0.00194 -0.000105" quat="0.497014 0.499245 0.505462 0.498237"
           mass="0.678"
@@ -220,22 +220,21 @@
   </worldbody>
 
   <actuator>
-    <motor class="abduction" name="FL_hip" joint="FL_hip_joint" />
-    <motor class="hip" name="FL_thigh" joint="FL_thigh_joint" />
-    <motor class="knee" name="FL_calf" joint="FL_calf_joint" />
     <motor class="abduction" name="FR_hip" joint="FR_hip_joint" />
     <motor class="hip" name="FR_thigh" joint="FR_thigh_joint" />
     <motor class="knee" name="FR_calf" joint="FR_calf_joint" />
-    <motor class="abduction" name="RL_hip" joint="RL_hip_joint" />
-    <motor class="hip" name="RL_thigh" joint="RL_thigh_joint" />
-    <motor class="knee" name="RL_calf" joint="RL_calf_joint" />
+    <motor class="abduction" name="FL_hip" joint="FL_hip_joint" />
+    <motor class="hip" name="FL_thigh" joint="FL_thigh_joint" />
+    <motor class="knee" name="FL_calf" joint="FL_calf_joint" />
     <motor class="abduction" name="RR_hip" joint="RR_hip_joint" />
     <motor class="hip" name="RR_thigh" joint="RR_thigh_joint" />
     <motor class="knee" name="RR_calf" joint="RR_calf_joint" />
-
+    <motor class="abduction" name="RL_hip" joint="RL_hip_joint" />
+    <motor class="hip" name="RL_thigh" joint="RL_thigh_joint" />
+    <motor class="knee" name="RL_calf" joint="RL_calf_joint" />
   </actuator>
 
-  <!-- <sensor>
+  <sensor>
     <jointpos name="FR_hip_pos" joint="FR_hip_joint" />
     <jointpos name="FR_thigh_pos" joint="FR_thigh_joint" />
     <jointpos name="FR_calf_pos" joint="FR_calf_joint" />
@@ -280,8 +279,14 @@
     <accelerometer name="imu_acc" site="imu" />
     
     <framepos name="frame_pos" objtype="site" objname="imu" />
-    <framelinvel name="frame_vel" objtype="site" objname="imu" /> -->
-  <!-- </sensor> -->
+    <framelinvel name="frame_vel" objtype="site" objname="imu" />
+
+    <!-- 传感器 -->
+    <!-- <touch name="FL_foot_touch" objtype="geom" objname="FL"/>
+    <touch name="FR_foot_touch" objtype="geom" objname="FR"/>
+    <touch name="RL_foot_touch" objtype="geom" objname="RL"/>
+    <touch name="RR_foot_touch" objtype="geom" objname="RR"/> -->
+  </sensor>
 
   <keyframe>
     <key name="home" qpos="0 0 0.27 1 0 0 0 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"

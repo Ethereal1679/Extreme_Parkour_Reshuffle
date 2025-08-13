@@ -4,23 +4,27 @@ import sys
 import torchvision
 
 class RecurrentDepthBackbone(nn.Module):
-    def __init__(self, base_backbone, env_cfg) -> None:
+    def __init__(self, base_backbone, env_cfg, eval_prop_n=None) -> None:
         super().__init__()
         activation = nn.ELU()
         last_activation = nn.Tanh()
         self.base_backbone = base_backbone
-        if env_cfg == None:
+        if eval_prop_n == None:
             self.combination_mlp = nn.Sequential(
                                     nn.Linear(32 + 53, 128),
                                     activation,
                                     nn.Linear(128, 32)
                                 )
+
         else:
             self.combination_mlp = nn.Sequential(
-                                        nn.Linear(32 + env_cfg.env.n_proprio, 128),
+                                        nn.Linear(32 + eval_prop_n, 128),
                                         activation,
                                         nn.Linear(128, 32)
                                     )
+            
+        
+
         self.rnn = nn.GRU(input_size=32, hidden_size=512, batch_first=True)
         self.output_mlp = nn.Sequential(
                                 nn.Linear(512, 32+2),

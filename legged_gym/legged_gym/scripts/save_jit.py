@@ -9,6 +9,7 @@ from rsl_rl.modules.depth_backbone import DepthOnlyFCBackbone58x87, RecurrentDep
 import argparse
 import code
 import shutil
+import datetime
 
 def get_load_path(root, load_run=-1, checkpoint=-1, model_name_include="model"):
     if not os.path.isdir(root):  # use first 4 chars to mactch the run name
@@ -56,7 +57,7 @@ class HardwareVisionNN(nn.Module):
         num_obs = num_prop + num_scan + num_hist*num_prop + num_priv_latent + num_priv_explicit
         self.num_obs = num_obs
         activation = get_activation(activation)
-        
+
         self.actor = Actor(num_prop, num_scan, num_actions, scan_encoder_dims, actor_hidden_dims, priv_encoder_dims, num_priv_latent, num_priv_explicit, num_hist, activation, tanh_encoder_output=tanh)
 
         self.estimator = Estimator(input_dim=num_prop, output_dim=num_priv_explicit, hidden_dims=[128, 64])
@@ -67,7 +68,7 @@ class HardwareVisionNN(nn.Module):
         # return obs, depth_latent
 
 def play(args):    
-    load_run = "../../logs/parkour_new/" + args.exptid
+    load_run = "../../logs/train_go2/" + args.exptid
     checkpoint = args.checkpoint
 
     n_priv_explicit = 3 + 3 + 3
@@ -78,7 +79,7 @@ def play(args):
     # depth_buffer_len = 2
     depth_resized = (87, 58)
     
-    n_proprio = 3 + 2 + 3 + 4 + 36 + 4 +1
+    n_proprio = 3 + 2 + 3 + 3 + 2 + 36
     history_len = 10
 
     device = torch.device('cpu')
@@ -113,7 +114,7 @@ def play(args):
         traced_policy.save(save_path)
         print("Saved traced_actor at ", os.path.abspath(save_path))
 
-    
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--exptid', type=str)
@@ -121,4 +122,3 @@ if __name__ == '__main__':
     parser.add_argument('--tanh', action='store_true')
     args = parser.parse_args()
     play(args)
-    

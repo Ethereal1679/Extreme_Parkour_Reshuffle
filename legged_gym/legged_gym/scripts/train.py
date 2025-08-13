@@ -38,6 +38,7 @@ from legged_gym.utils import get_args, task_registry
 from shutil import copyfile
 import torch
 import wandb
+import datetime
 
 def train(args):
     # args.headless = True
@@ -56,23 +57,29 @@ def train(args):
 
     if args.no_wandb:
         mode = "disabled"
-    wandb.init(project=args.proj_name, name=args.exptid, group=args.exptid[:3], mode=mode, dir="../../logs")
+
+    wandb.init(project=args.proj_name, name=args.exptid, group=args.exptid[:3], mode=mode, dir="../../logs", settings=wandb.Settings(init_timeout=120))
     wandb.save(LEGGED_GYM_ENVS_DIR + "/base/legged_robot_config.py", policy="now")
     wandb.save(LEGGED_GYM_ENVS_DIR + "/base/legged_robot.py", policy="now")
 
     env, env_cfg = task_registry.make_env(name=args.task, args=args)
     ppo_runner, train_cfg = task_registry.make_alg_runner(log_root = log_pth, env=env, name=args.task, args=args)
+    task_registry.save_cfgs(task=args.task, name=args.exptid) #save
     ppo_runner.learn(num_learning_iterations=train_cfg.runner.max_iterations, init_at_random_ep_len=True)
 
 
 ### 这电脑显存实在是太小了
 if __name__ == '__main__':
     # Log configs immediately
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     args = get_args()
 
 
     NAME="S"  ## remember to change this to "T" for teacher training or "S" for student training
     task_name = "go2"
+    args.no_wandb = True
+
+
 
     ## teacher
     if NAME == "T":
@@ -80,8 +87,9 @@ if __name__ == '__main__':
         args.max_iterations = 10000000
         args.num_envs = 1024
         args.proj_name = f"train_go2"
-        args.exptid = f"Teacher_go2"
+        args.exptid = f"{timestamp}_Teacher_go2_original"
         args.headless = True
+
 
     ## student
     if NAME == "S":
@@ -89,11 +97,11 @@ if __name__ == '__main__':
         args.max_iterations = 10000000
         args.num_envs = 80
         args.proj_name = f"train_go2"
-        args.exptid = f"Student_go2"
+        args.exptid = f"{timestamp}_Student_go2_original"
         args.headless = True
         ## 
         args.resume = True
-        args.resumeid = "Teacher_go2"
+        args.resumeid = "20250811_014015_Teacher_go2_original"
         args.delay = True
         args.use_camera = True
 

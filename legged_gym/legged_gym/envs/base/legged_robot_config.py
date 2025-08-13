@@ -40,11 +40,12 @@ class LeggedRobotCfg(BaseConfig):
     class env:
         num_envs = 6144
 
-        n_scan = 132  ## 12x11
-        n_priv = 3 + 3 + 3 #9
-        n_priv_latent = 4 + 1 + 12 + 12 # 29
-        n_proprio = 3 + 2 + 3 + 3 + 2 + 36 + 4 # 53
-        history_len = 10 #10
+
+        n_scan = 132
+        n_priv = 3 +3 +3
+        n_priv_latent = 4 + 1 + 12 +12
+        n_proprio = 3 + 2 + 3 + 3 + 2 + 36 #+ 4 
+        history_len = 10
 
         num_observations = n_proprio + n_scan + history_len*n_proprio + n_priv_latent + n_priv #n_scan + n_proprio + n_priv #187 + 47 + 5 + 12 
         num_privileged_obs = None # if not None a priviledge_obs_buf will be returned by step() (critic obs for assymetric training). None is returned otherwise 
@@ -55,6 +56,9 @@ class LeggedRobotCfg(BaseConfig):
         obs_type = "og"
 
 
+        
+        
+        
         history_encoding = True
         reorder_dofs = True
         
@@ -83,13 +87,11 @@ class LeggedRobotCfg(BaseConfig):
         reach_goal_delay = 0.1
         num_future_goal_obs = 2
 
-        debug_show = False # zsy added
-    ## 深度相机相关参数
     class depth:
         use_camera = False
         camera_num_envs = 192
-        camera_terrain_num_rows = 10 ## camera 使用不同的 terrain type
-        camera_terrain_num_cols = 8 
+        camera_terrain_num_rows = 10
+        camera_terrain_num_cols = 8
 
         position = [0.27, 0, 0.03]  # front camera
         angle = [-5, 5]  # positive pitch down
@@ -153,7 +155,7 @@ class LeggedRobotCfg(BaseConfig):
 
         all_vertical = False
         no_flat = True
-
+        
         static_friction = 1.0
         dynamic_friction = 1.0
         restitution = 0.
@@ -168,7 +170,7 @@ class LeggedRobotCfg(BaseConfig):
         terrain_length = 18.
         terrain_width = 4
         num_rows= 10 # number of terrain rows (levels)  # spreaded is benifitiall !
-        num_cols = 8 #40 # number of terrain cols (types)
+        num_cols = 8 # number of terrain cols (types)
         
         terrain_dict = {"smooth slope": 0., 
                         "rough slope up": 0.0,
@@ -415,4 +417,3 @@ class LeggedRobotCfgPPO(BaseConfig):
         load_run = -1 # -1 = last run
         checkpoint = -1 # -1 = last saved model
         resume_path = None # updated from load_run and chkpt
-
