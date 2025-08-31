@@ -176,7 +176,7 @@ def play(args):
     env_cfg.domain_rand.randomize_base_com = False
 
     env_cfg.env.debug_show = args.debug_show
-
+    
     depth_latent_buffer = []
     # prepare environment
     env: LeggedRobot
@@ -306,7 +306,7 @@ if __name__ == '__main__':
     args = get_args()
     args.debug_show = True
 
-    NAME="T"
+    NAME="S"
 
     ## teacher
     if NAME == "T":
@@ -320,11 +320,12 @@ if __name__ == '__main__':
     if NAME == "S":
         args.task = "go2"  # Set the task to A1
         args.proj_name = "train_go2"
-        args.exptid  = "Student_go2_20250811_1252"
+        args.exptid  = "20250813_162402_Student_go2_original"
         args.num_envs = 20
         args.delay = True
         args.use_camera = True
-        args.checkpoint = 10000
+        args.checkpoint = 385000
+
 
         # args.task = "go1"  # Set the task to A1
         # args.proj_name = "train"

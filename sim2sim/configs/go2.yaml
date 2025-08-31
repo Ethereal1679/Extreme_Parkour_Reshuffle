@@ -1,12 +1,13 @@
 # 
-policy_path: "{SIM2SIM}/pretrain/traced/base_jit.pt"
-vision_policy_path: "{SIM2SIM}/pretrain/traced/vision_weight.pt"
+policy_path: "{SIM2SIM}/pretrain/0815_student/base_jit.pt"
+vision_policy_path: "{SIM2SIM}/pretrain/0815_student/vision_weight.pt"
 xml_path: "{SIM2SIM}/resources/go2_with_camera/depth_camera_scene_terrain.xml"
 
 ## camera ====
 output_resolution : [58, 87]
 depth_range : [0.0, 3.0]
 cropping: [60, 100, 80, 40] # [top, bottom, left, right] # no cropping
+
 
 # Total simulation time
 simulation_duration: 60.0

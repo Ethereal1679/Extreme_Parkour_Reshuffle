@@ -11,6 +11,8 @@ import code
 import shutil
 import datetime
 
+
+
 def get_load_path(root, load_run=-1, checkpoint=-1, model_name_include="model"):
     if not os.path.isdir(root):  # use first 4 chars to mactch the run name
         model_name_cand = os.path.basename(root)
@@ -31,6 +33,8 @@ def get_load_path(root, load_run=-1, checkpoint=-1, model_name_include="model"):
 
     load_path = os.path.join(root, model)
     return load_path, checkpoint
+
+
 
 class HardwareVisionNN(nn.Module):
     def __init__(self,  num_prop,
@@ -121,4 +125,11 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoint', type=int, default=-1)
     parser.add_argument('--tanh', action='store_true')
     args = parser.parse_args()
+
+
+    args.exptid = "20250813_162402_Student_go2_original"
+    args.checkpoint = 385000
+    args.tanh = False
+
+
     play(args)

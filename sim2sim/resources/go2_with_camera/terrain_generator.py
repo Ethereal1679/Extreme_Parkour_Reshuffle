@@ -261,7 +261,9 @@ if __name__ == "__main__":
     tg = TerrainGenerator()
 
     # Box obstacle
-    # tg.AddBox(position=[1.5, 0.0, 0.1], euler=[0, 0, 0.0], size=[1, 1.5, 0.2])
+    tg.AddBox(position=[1.5, 0.0, 0.1], euler=[0, 0, 0.0], size=[0.4, 3.5, 0.15])
+    tg.AddBox(position=[3.5, 0.0, 0.1], euler=[0, 0, 0.0], size=[0.4, 3.5, 0.15])
+    tg.AddBox(position=[5.5, 0.0, 0.1], euler=[0, 0, 0.0], size=[0.4, 3.5, 0.15])
     
     # # Geometry obstacle
     # # geo_type supports "plane", "sphere", "capsule", "ellipsoid", "cylinder", "box"
@@ -279,10 +281,10 @@ if __name__ == "__main__":
     # tg.AddSuspendStairs(init_pos=[1.0, 6.0, 0.0], yaw=0.0)
 
     # # Rough ground
-    tg.AddRoughGround(init_pos=[-5.0, -5.0, 0.0],
-                      euler=[0, 0, 0.0],
-                      box_size=[0.5, 0.5, 0.5],
-                      nums=[80, 80])
+    # tg.AddRoughGround(init_pos=[-5.0, -5.0, 0.0],
+    #                   euler=[0, 0, 0.0],
+    #                   box_size=[0.5, 0.5, 0.5],
+    #                   nums=[80, 80])
 
     # # Perlin heigh field
     # tg.AddPerlinHeighField(position=[-1.5, 4.0, 0.0], size=[2.0, 1.5])
