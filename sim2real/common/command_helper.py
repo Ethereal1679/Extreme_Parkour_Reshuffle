@@ -59,3 +59,6 @@ def init_cmd_go(cmd: LowCmdGo, weak_motor: list):
         cmd.motor_cmd[i].kp = 0
         cmd.motor_cmd[i].kd = 0
         cmd.motor_cmd[i].tau = 0
+
+
+

@@ -5,6 +5,7 @@ from typing import Union
 import numpy as np
 import time
 import torch
+from torch import nn 
 
 # 与通信有关
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelFactoryInitialize
@@ -26,15 +27,64 @@ from common.remote_controller import RemoteController, KeyMap
 # config导入
 from sim2real.sim2real_config import Config
 
+# 与模型导入有关
+from rsl_rl.modules.depth_backbone import RecurrentDepthBackbone, DepthOnlyFCBackbone58x87
+import os
+
+
+
+SIM2REAL = os.path.dirname(os.path.abspath(__file__))
+print("SIM2REAL",SIM2REAL)
+
+
+
+def euler_from_quaternion(quat_angle):
+        """
+        Convert a quaternion into euler angles (roll, pitch, yaw)
+        roll is rotation around x in radians (counterclockwise)
+        pitch is rotation around y in radians (counterclockwise)
+        yaw is rotation around z in radians (counterclockwise)
+        """
+        # x = quat_angle[:,0]; y = quat_angle[:,1]; z = quat_angle[:,2]; w = quat_angle[:,3]
+        w = quat_angle[0]; x = quat_angle[1]; y = quat_angle[2]; z = quat_angle[3]
+        t0 = +2.0 * (w * x + y * z)
+        t1 = +1.0 - 2.0 * (x * x + y * y)
+        roll_x = np.arctan2(t0, t1)
+        t2 = +2.0 * (w * y - z * x)
+        t2 = np.clip(t2, -1, 1)
+        pitch_y = np.arcsin(t2)
+        t3 = +2.0 * (w * z + x * y)
+        t4 = +1.0 - 2.0 * (y * y + z * z)
+        yaw_z = np.arctan2(t3, t4)
+
+        return roll_x, pitch_y, yaw_z # in radians
+
+
 
 class Controller:
     def __init__(self, config: Config) -> None:
         self.config = config
         self.remote_controller = RemoteController()
 
-        # Initialize the policy network
-        self.policy = torch.jit.load(config.policy_path)
-        # Initializing process variables
+        ## ======== import models ==========
+        self.device = "cuda"
+        self.policy = torch.jit.load(config.policy_path, map_location=self.device)
+        self.policy.eval()
+
+        self.estimator = self.policy.estimator.estimator
+        self.hist_encoder = self.policy.actor.history_encoder
+        self.actor = self.policy.actor.actor_backbone
+
+
+        vision_model = torch.load(self.config.vision_policy_path, map_location=self.device)
+        depth_backbone = DepthOnlyFCBackbone58x87(None, 32, None)
+        self.depth_encoder = RecurrentDepthBackbone(depth_backbone, None, eval_prop_n=self.config.n_proprio ).to(self.device)
+        self.depth_encoder.load_state_dict(vision_model['depth_encoder_state_dict'])
+        self.depth_encoder.to(self.device)
+        self.depth_encoder.eval()
+
+
+        ## ========= Initializing process variables ==========
         self.qj = np.zeros(config.num_actions, dtype=np.float32)
         self.dqj = np.zeros(config.num_actions, dtype=np.float32)
         self.action = np.zeros(config.num_actions, dtype=np.float32)
@@ -42,22 +92,8 @@ class Controller:
         self.obs = np.zeros(config.num_obs, dtype=np.float32)
         self.cmd = np.array([0.0, 0, 0])
         self.counter = 0
+        self.history_obs_prop = np.zeros((self.config.n_hist_len , self.config.n_proprio), dtype=np.float32)  
 
-        # if config.msg_type == "hg":
-        #     # g1 and h1_2 use the hg msg type
-        #     self.low_cmd = unitree_hg_msg_dds__LowCmd_()
-        #     self.low_state = unitree_hg_msg_dds__LowState_()
-        #     self.mode_pr_ = MotorMode.PR
-        #     self.mode_machine_ = 0
-
-        #     self.lowcmd_publisher_ = ChannelPublisher(config.lowcmd_topic, LowCmdHG)
-        #     self.lowcmd_publisher_.Init()
-
-        #     self.lowstate_subscriber = ChannelSubscriber(config.lowstate_topic, LowStateHG)
-        #     self.lowstate_subscriber.Init(self.LowStateHgHandler, 10)
-
-        # elif config.msg_type == "go":
-            # h1 uses the go msg type
 
         self.low_cmd = unitree_go_msg_dds__LowCmd_()
         self.low_state = unitree_go_msg_dds__LowState_()
@@ -68,11 +104,14 @@ class Controller:
         self.lowstate_subscriber = ChannelSubscriber(config.lowstate_topic, LowStateGo)
         self.lowstate_subscriber.Init(self.LowStateGoHandler, 10)
 
-        # else:
-        #     raise ValueError("Invalid msg_type")
+        ### 获得相机数据 ###
+        self.depth_camera_subscriber = ChannelSubscriber(config.depth_data_topic, None) 
+        self.depth_camera_subscriber.Init(self.DepthDataHandler, 10)
+
 
         # wait for the subscriber to receive data
         self.wait_for_low_state()
+
 
         # Initialize the command msg
         # if config.msg_type == "hg":
@@ -80,14 +119,17 @@ class Controller:
         # elif config.msg_type == "go":
         init_cmd_go(self.low_cmd, weak_motor=self.config.weak_motor)
 
-    # def LowStateHgHandler(self, msg: LowStateHG):
-    #     self.low_state = msg
-    #     self.mode_machine_ = self.low_state.mode_machine
-    #     self.remote_controller.set(self.low_state.wireless_remote)
+
+
+    ## 处理深度相机数据
+    def DepthDataHandler(self, msg):
+        self.depth_data = torch.tensor(msg.data, dtype=torch.float32).reshape(1, 58, 87)  #.to(self.self.device)
+
 
     def LowStateGoHandler(self, msg: LowStateGo):
         self.low_state = msg
         self.remote_controller.set(self.low_state.wireless_remote)
+
 
     # def send_cmd(self, cmd: Union[LowCmdGo, LowCmdHG]):
     #     cmd.crc = CRC().Crc(cmd)
@@ -155,15 +197,27 @@ class Controller:
                 self.low_cmd.motor_cmd[motor_idx].kp = self.config.kps[i]
                 self.low_cmd.motor_cmd[motor_idx].kd = self.config.kds[i]
                 self.low_cmd.motor_cmd[motor_idx].tau = 0
-            # for i in range(len(self.config.arm_waist_joint2motor_idx)):
-            #     motor_idx = self.config.arm_waist_joint2motor_idx[i]
-            #     self.low_cmd.motor_cmd[motor_idx].q = self.config.arm_waist_target[i]
-            #     self.low_cmd.motor_cmd[motor_idx].qd = 0
-            #     self.low_cmd.motor_cmd[motor_idx].kp = self.config.arm_waist_kps[i]
-            #     self.low_cmd.motor_cmd[motor_idx].kd = self.config.arm_waist_kds[i]
-            #     self.low_cmd.motor_cmd[motor_idx].tau = 0
+
             self.send_cmd(self.low_cmd)
             time.sleep(self.config.control_dt)
+
+
+    ## 组帧(深度图像+本体观测)
+    def combine_all_obs(self, proprio, depth_latent_yaw, proprio_history, n_proprio, n_depth_latent, n_hist_len):
+        depth_latent = depth_latent_yaw[:, :-2]
+        yaw = depth_latent_yaw[:, -2:] * 1.5
+        print('yaw: ', yaw)
+        proprio[:, 6:8] = yaw
+        lin_vel_latent = self.estimator(proprio)
+        activation = nn.ELU()
+        # import ipdb;ipdb.set_trace()
+        # priv_latent = hist_encoder(activation, proprio_history.view(-1, n_hist_len, n_proprio))
+        proprio_history = torch.from_numpy(proprio_history).to(self.device).unsqueeze(0)
+        priv_latent = self.hist_encoder(activation, proprio_history)
+        # import ipdb;ipdb.set_trace()
+        obs = torch.cat([proprio, depth_latent, lin_vel_latent, priv_latent], dim=-1)
+        return obs
+
 
 
     def run(self):
@@ -177,51 +231,92 @@ class Controller:
         quat = self.low_state.imu_state.quaternion
         ang_vel = np.array([self.low_state.imu_state.gyroscope], dtype=np.float32)
 
-        ## NOTE：
-        # if self.config.imu_type == "torso":
-        #     # h1 and h1_2 imu is on the torso
-        #     # imu data needs to be transformed to the pelvis frame
-        #     waist_yaw = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].q
-        #     waist_yaw_omega = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].dq
-        #     quat, ang_vel = transform_imu_data(waist_yaw=waist_yaw, waist_yaw_omega=waist_yaw_omega, imu_quat=quat, imu_omega=ang_vel)
 
         # create observation
-        gravity_orientation = get_gravity_orientation(quat)
-        qj_obs = self.qj.copy()
-        dqj_obs = self.dqj.copy()
-        qj_obs = (qj_obs - self.config.default_angles) * self.config.dof_pos_scale
-        dqj_obs = dqj_obs * self.config.dof_vel_scale
-        ang_vel = ang_vel * self.config.ang_vel_scale
+        # gravity_orientation = get_gravity_orientation(quat)
+        num_actions = self.config.num_actions
+        action = np.zeros(num_actions, dtype=np.float32)
 
-        ## 观测值
-        period = 0.8
-        count = self.counter * self.config.control_dt
-        phase = count % period / period
-        sin_phase = np.sin(2 * np.pi * phase)
-        cos_phase = np.cos(2 * np.pi * phase)
+
 
         self.cmd[0] = self.remote_controller.ly
         self.cmd[1] = self.remote_controller.lx * -1
         self.cmd[2] = self.remote_controller.rx * -1
 
-        num_actions = self.config.num_actions
-        self.obs[:3] = ang_vel
-        self.obs[3:6] = gravity_orientation
-        self.obs[6:9] = self.cmd * self.config.cmd_scale * self.config.max_cmd
-        self.obs[9 : 9 + num_actions] = qj_obs
-        self.obs[9 + num_actions : 9 + num_actions * 2] = dqj_obs
-        self.obs[9 + num_actions * 2 : 9 + num_actions * 3] = self.action
-        self.obs[9 + num_actions * 3] = sin_phase
-        self.obs[9 + num_actions * 3 + 1] = cos_phase
 
-        # Get the action from the policy network
+
+
+        # ==== 获得观测值 ====
+        ## [obs] dim=3
+        omega = ang_vel * self.config.ang_vel_scale
+
+        ## [obs] dim=2
+        roll, pitch, yaw = euler_from_quaternion(quat)
+        imu_obs = np.array([roll, pitch], dtype=np.float32)  # [roll, pitch]
+
+        ## [obs] dim=3
+        delta_yaw, delta_next_yaw = 0, 0
+        yaw_info = np.array([0, delta_yaw, delta_next_yaw], dtype=np.float32)
+
+        ## [obs] dim=3
+        cmd = np.array([0, 0, self.cmd[0]], dtype=np.float32)  # [0, 0, vx]
+
+        mode = "parkour"
+        ## [obs] dim=2
+        if mode == "parkour":
+            parkour_walk = np.array([1, 0], dtype=np.float32) # parkour
+        elif mode == "walk":
+            parkour_walk = np.array([0, 1], dtype=np.float32) # walk
+
+        ## [obs] dim=12
+        qj_obs = self.qj.copy()
+        qj_obs = (qj_obs - self.config.default_angles) * self.config.dof_pos_scale
+
+        ## [obs] dim=12
+        dqj_obs = self.dqj.copy()
+        dqj_obs = dqj_obs * self.config.dof_vel_scale
+
+        ## [obs] dim=12
+        last_action = action 
+
+
+
+
+        # 本体观测输入
+        self.obs = np.concatenate((omega, imu_obs, yaw_info, cmd, parkour_walk, qj_obs, dqj_obs, last_action), axis=0)
         obs_tensor = torch.from_numpy(self.obs).unsqueeze(0)
-        self.action = self.policy(obs_tensor).detach().numpy().squeeze()
+
+        # 深度图像和本体观测组合
+        visual_update_interval = 5
+        if self.counter % visual_update_interval == 0:
+            depth_image = self.depth_data               ## 获得深度图像
+            # depth_image_origin, depth_normalized, depth_normalized_to_tensor = _process_depth_image(depth_image) ## 处理深度图像
+            ## last 初始化
+            if self.counter == 0:
+                self.last_depth_image = depth_image
+            ## depth encoder
+            # import ipdb;ipdb.set_trace()
+            depth_latent_yaw = self.depth_encoder(self.last_depth_image, obs_tensor) # 融合
+            self.last_depth_image = depth_image
+
+
+        # ==== 网络输入 ====
+        obs_tensor = self.combine_all_obs(obs_tensor, depth_latent_yaw, self.history_obs_prop, self.config.n_proprio, self.config.n_depth_latent, self.config.n_hist_len)
+
+
+        # ==== 历史信息组合 ====
+        # history_obs_prop.append(obs_prop.copy())
+        self.history_obs_prop[: -1 ] = self.history_obs_prop[1:]
+        self.history_obs_prop[-1:] = self.obs_prop.copy()
         
+
+        ### 输出action
+        self.action = self.actor(obs_tensor).detach().numpy().squeeze()
+
         # transform action to target_dof_pos
         target_dof_pos = self.config.default_angles + self.action * self.config.action_scale
 
-        # Build low cmd
+        # Build low cmd  电机指令下发
         for i in range(len(self.config.leg_joint2motor_idx)):
             motor_idx = self.config.leg_joint2motor_idx[i]
             self.low_cmd.motor_cmd[motor_idx].q = target_dof_pos[i]
@@ -230,13 +325,6 @@ class Controller:
             self.low_cmd.motor_cmd[motor_idx].kd = self.config.kds[i]
             self.low_cmd.motor_cmd[motor_idx].tau = 0
 
-        # for i in range(len(self.config.arm_waist_joint2motor_idx)):
-        #     motor_idx = self.config.arm_waist_joint2motor_idx[i]
-        #     self.low_cmd.motor_cmd[motor_idx].q = self.config.arm_waist_target[i]
-        #     self.low_cmd.motor_cmd[motor_idx].qd = 0
-        #     self.low_cmd.motor_cmd[motor_idx].kp = self.config.arm_waist_kps[i]
-        #     self.low_cmd.motor_cmd[motor_idx].kd = self.config.arm_waist_kds[i]
-        #     self.low_cmd.motor_cmd[motor_idx].tau = 0
 
         # send the command
         self.send_cmd(self.low_cmd)
@@ -252,8 +340,12 @@ if __name__ == "__main__":
     parser.add_argument("config", type=str, help="config file name in the configs folder", default="g1.yaml")
     args = parser.parse_args()
 
+    ################### self DIY #####################
+    args.config = "go2.yaml"
+    args.net = "enp0s3"
+
     # Load config
-    config_path = f"{LEGGED_GYM_ROOT_DIR}/configs/{args.config}"
+    config_path = f"{SIM2REAL}/configs/{args.config}"
     config = Config(config_path)
 
     # Initialize DDS communication
@@ -270,11 +362,13 @@ if __name__ == "__main__":
     # Enter the default position state, press the A key to continue executing
     controller.default_pos_state()
 
+
     while True:
         try:
             controller.run()
             # Press the select key to exit
             if controller.remote_controller.button[KeyMap.select] == 1:
+                print("紧急中断")
                 break
         except KeyboardInterrupt:
             break
@@ -282,3 +376,7 @@ if __name__ == "__main__":
     create_damping_cmd(controller.low_cmd)
     controller.send_cmd(controller.low_cmd)
     print("Exit")
+
+
+
+

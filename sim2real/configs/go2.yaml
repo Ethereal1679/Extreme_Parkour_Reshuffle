@@ -1,14 +1,19 @@
 # Go2 yaml configs
+policy_path: "{SIM2REAL}/pretrain/0815_student/base_jit.pt"
+vision_policy_path: "{SIM2REAL}/pretrain/0815_student/vision_weight.pt"
+
 
 control_dt: 0.02
 
-msg_type: "go"     # "hg" or "go"
-imu_type: "pelvis"    # "torso" or "pelvis"
+# msg_type: "go"     # "hg" or "go"
+# imu_type: "pelvis"    # "torso" or "pelvis"
 
 lowcmd_topic: "rt/lowcmd"
 lowstate_topic: "rt/lowstate"
+depth_data_topic: "rt/forward_depth_image"
 
-policy_path: "{LEGGED_GYM_ROOT_DIR}/deploy/pre_train/go2/extreme_parkour.pt"
+
+
 
 leg_joint2motor_idx: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
@@ -30,9 +35,11 @@ cmd_scale: [2.0, 2.0, 0.25]
 
 num_actions: 12 ## fl-fr-rl-rr
 
-num_obs: 53
+n_proprio: 49
+n_hist_len : 10
+n_depth_latent : 32
 
-max_cmd: [1.5, 0., 0.0] #？
+max_cmd: [1.5, 0.0, 0.0] #？
 
 
 
